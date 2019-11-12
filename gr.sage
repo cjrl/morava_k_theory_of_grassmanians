@@ -15,7 +15,7 @@ class Gr:
         self.sq_dict = {}
 
         print "Defining Relations..."
-        self.relations = [self.R(self.wbar_expression_in_w(i)) for i in range(c+1,c+1+2)]
+        self.relations = [self.R(self.wbar_expression_in_w(i)) for i in range(c+1,c+d+1)]
         print self.relations
         print "Forming the ideal..."
         self.ideal = self.R.ideal(self.relations)
@@ -63,6 +63,7 @@ class Gr:
         expression = self.get_w(k)
         for i in range(1,k):
             expression += self.get_w(i)*self.get_wbar(k-i)
+        print expression
         return expression
 
     def wbar_expression_in_w(self,k):
@@ -71,17 +72,13 @@ class Gr:
         for i in range(1,k):
             if self.get_wbar(i) != 0:
                 relations[self.get_wbar(i)] = self.wbar_expression(i).substitute(relations)
-        # print relations
+        print relations
         expression = self.wbar_expression(k).substitute(relations)
         
         # for i in range(1,k): 
         #     expression = expression.substitute(relations)
         return expression
 
-    # Sq^i(w1^aw2^b)
-    # Formulas for Sq^1, Sq^2 form the paper
-    # ON GROEBNER BASES AND IMMERSIONS OF GRASSMANN MANIFOLDS G2,n
-    # ZORAN Z. PETROVIC and BRANISLAV I. PRVULOVIC ́
 
     def commutator(self,f,g):
         return lambda x : f(g(x)) + g(f(x))
@@ -101,14 +98,16 @@ class Gr:
         return answer
     
     def SqBackend(self,i,expression):
-        expression = self.R(expression)
         
+        expression = self.R(expression)
+
         if i == 0:
             return expression 
         
         # Sq is linear 
-        if len(list(expression)) > 1:
+        if len(self.R.gens()) != 1 and len(list(expression)) > 1:
             summation = 0
+            
             for term in list(expression):
                 term = term[0]*term[1]
                 summation += self.Sq(i,term)
@@ -116,15 +115,21 @@ class Gr:
 
         word = expression
 
+        
         if word == 0:
             return 0
 
         if word == 1: # i > |word| since i in dim 0
             return 0
 
-        degree = sum([(x+1)*e for x,e in enumerate(word.exponents()[0])])
         
-        # prit "test"
+        degree =  word.exponents()[0] # for univariant 
+        
+        if len(self.R.gens()) > 1:
+            degree = sum([(x+1)*e for x,e in enumerate(word.exponents()[0])])
+        
+        # print "test"
+        # print "test"
         # print i
         # print degree
 
