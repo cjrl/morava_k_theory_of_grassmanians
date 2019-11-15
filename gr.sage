@@ -1,8 +1,14 @@
 class Gr:
-   
+    """Grassmanian of d-planes in \R^(d+c)
+
+    sage: g = Gr(2,4) 
+    sage: len(g.H) - 1 == g.top_cohomological_dim
+    True
+    
+    
+    """
     # only works for odd d right now
     def __init__(self, d,c):
-        "Grassmanian of d-planes in \R^(d+c)"
         self.d =d 
         self.c = c
         self.ws = ["w"+str(i) for i in range(1,d+1)]
@@ -14,20 +20,35 @@ class Gr:
         self.W = [1]+[self.R.gens()[i - 1] for i in range(1,self.d + 1)]
         self.sq_dict = {}
 
-        print "Defining Relations..."
+        # print "Defining Relations..."
         self.relations = [self.R(self.wbar_expression_in_w(i)) for i in range(c+1,c+d+1)]
-        print self.relations
-        print "Forming the ideal..."
+        # print self.relations
+        # print "Forming the ideal..."
         self.ideal = self.R.ideal(self.relations)
-        print "Taking the quotient..."
+        # print "Taking the quotient..."
         self.Mod2CohomologyRing = self.R.quotient(self.ideal)
 
-        print "Detereming Cohomology..."
+        # print "Detereming Cohomology..."
         self.top_cohomological_dim = self.d*self.c
         self.H = [self.additive_basis_for_qth_cohomology(q) for q in range(self.top_cohomological_dim+1)]
 
         # print sum([len(y) for y in self.H])
 
+    def coordinate_vector_in_qth_basis(self,word,q):
+        """
+        sage: g = Gr(3,4)
+        sage: word = g.W[1]
+        sage: g.coordinate_vector_in_qth_basis(word,1)
+        [1]
+
+        sage: word = g.W[1]^4 + g.W[2]^2
+        sage: g.coordinate_vector_in_qth_basis(word,4)
+        [1, 0, 0, 1]
+        """
+        basis = self.additive_basis_for_qth_cohomology(q)
+        return [word.monomial_coefficient(self.normal_form(b)) for b in basis]
+        return 0
+        
     def w(self,i):
         if i >= len(self.W):
             return 0
@@ -44,6 +65,11 @@ class Gr:
         return self.S.gens()[i-1+self.d]
         
     def additive_basis_for_qth_cohomology(self,q):
+        """
+        sage: g = Gr(3,5)
+        sage: g.additive_basis_for_qth_cohomology(4) == [g.W[2]^2,g.W[1]*g.W[3],g.W[1]^2*g.W[2],g.W[1]^4]
+        True
+        """
         S = range(0,self.c+1)
         exponents = cartesian_product([S for i in range(self.d)]).list()
         exponents = filter(lambda x: sum(x) <= self.c, exponents)
@@ -51,6 +77,14 @@ class Gr:
         return [self.make_word_with_exponents(ex) for ex in exponents]
 
     def make_word_with_exponents(self,expontents):
+        """
+        sage: g = Gr(3,10)
+        sage: g.make_word_with_exponents([1,2,4]) == g.W[1]*g.W[2]^2*g.W[3]^4
+        True
+    
+        sage: g.make_word_with_exponents([])
+        1
+        """
         word = 1
         for i,e in enumerate(expontents):
             word *= self.w(i+1)^e
@@ -60,10 +94,18 @@ class Gr:
         return self.ideal.reduce(self.R(expression))
         
     def wbar_expression(self,k):
+        """
+        sage: g = Gr(2,5)
+        sage: g.wbar_expression(1)
+        w1
+        
+        sage g.wbar_expression(2)
+        w2 + w1*w2
+        """
         expression = self.get_w(k)
         for i in range(1,k):
             expression += self.get_w(i)*self.get_wbar(k-i)
-        print expression
+        # print expression
         return expression
 
     def wbar_expression_in_w(self,k):
@@ -72,7 +114,7 @@ class Gr:
         for i in range(1,k):
             if self.get_wbar(i) != 0:
                 relations[self.get_wbar(i)] = self.wbar_expression(i).substitute(relations)
-        print relations
+        # print relations
         expression = self.wbar_expression(k).substitute(relations)
         
         # for i in range(1,k): 
@@ -91,6 +133,29 @@ class Gr:
         return self.commutator(lambda x : self.Sq(2^(n),x),self.Q(n-1))
 
     def Sq(self,i,expression):
+        """
+        sage: g = Gr(2,4) 
+
+        # Squaring Condition
+        sage: w1 = g.W[1]
+        sage: g.Sq(1,w1) == w1^2
+        True
+        
+        # Unstable Condition
+        sage: g.Sq(2,w1) == 0
+        True
+
+        # Additive Homomorphism
+        sage: w2 = g.W[2]
+        sage: g.Sq(1,w1+w2) == g.Sq(1,w1)+g.Sq(1,w2)
+        True
+
+        # Cartan Formula
+        sage: Sq = g.Sq
+        sage: Sq(3,w1^2*w2) == Sq(0,w1^2)*Sq(3,w2)+Sq(1,w1^2)*Sq(2,w2)+Sq(2,w1^2)*Sq(1,w2)+Sq(3,w1^2)*Sq(0,w2)
+        True
+        
+        """
         if (i,expression) in self.sq_dict:
             return self.sq_dict[(i,expression)]
         answer = self.SqBackend(i,expression)
@@ -128,10 +193,6 @@ class Gr:
         if len(self.R.gens()) > 1:
             degree = sum([(x+1)*e for x,e in enumerate(word.exponents()[0])])
         
-        # print "test"
-        # print "test"
-        # print i
-        # print degree
 
         if i > degree:
             return 0
@@ -145,16 +206,8 @@ class Gr:
         if word in self.W:
             return self.wu_formula(i,self.W.index(word))
 
-        # if i == 1:
-        #     return coefficient*(a+b)*self.w1^(a+1)*self.w2^b
-        # if i == 2:
-        #     return coefficient*(b*self.w1^a*self.w2^(b+1) + binomial(a+b,2)*self.w1^(a+2)*self.w2^b)
-        # if b == 0:
-        #     return coefficient*binomial(a,i)*self.w1^(a+i)
 
         x,y = self.split_off_letter(word)
-
-        # print "split",x, y 
 
         answer = 0
         for j in range(i+1):
@@ -166,18 +219,38 @@ class Gr:
         return answer
 
     def split_off_letter(self,word):
+        """
+        sage: g = Gr(4,5)
+        sage: word = g.W[1]*g.W[2]
+        sage: g.split_off_letter(word)
+        (w1, w2)
+
+        sage: word = g.W[1]^2*g.W[2]*g.W[4]
+        sage: g.split_off_letter(word)
+        (w1, w1*w2*w4)
+
+        sage: word = g.W[1]
+        sage: g.split_off_letter(word)
+        (w1, 1)
+
+        sage: word = 1
+        sage: g.split_off_letter(word)
+        (1, 1)
+        """
+        if word == 1:
+            return (1,1)
+        
         exponents = list(word.exponents()[0])
-        # print exponents
+        
         first_nonzero = 0
         while exponents[first_nonzero] == 0:
             first_nonzero += 1
+
         letter = self.W[first_nonzero+1]
-        # print letter
         exponents[first_nonzero] = exponents[first_nonzero] - 1
-        # print "test"
         new_word = 1
+
         for i in range(1,len(self.W)):
-            # print i
             new_word *= self.W[i]^exponents[i-1]
             
         return letter, new_word

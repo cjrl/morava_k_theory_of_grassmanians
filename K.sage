@@ -6,6 +6,18 @@ class K:
         self.Gr = Gr
 
     def d(self,element):
+        """
+        This is the first non-trivial differential in the AHSS for K(n)(-)
+        
+        # Example 1
+        # For K(1) d = Q(1) = Sq2Sq1 + Sq2Sq1
+        # hence d(w1) = w1^4
+        # in Gr(2,c) with c >= 4 otherwise w1^4 is not a generator for 4th homology
+        sage: g = Gr(2,4)
+        sage: k = K(1,g) 
+        sage: k.d(g.W[1])
+        w1^4
+        """
         #  RP = Gr_1
         if self.Gr.d == 1:
             print element.degree()
@@ -22,6 +34,20 @@ class K:
         return self.Gr.normal_form(self.Gr.Q(self.n)(element))
 
     def homology_at(self,q):
+        r = 2^(self.n + 1) - 1
+        qth_M = self.qth_differential_as_matrix(q)
+
+        q_minus_r_basis = self.Gr.additive_basis_for_qth_cohomology(q-r)
+        q_minus_r_image = [self.Gr.coordinate_vector_in_qth_basis(self.d(b),q) for b in q_minus_r_basis]
+        
+        Z = qth_M.right_kernel()
+        B = Z.subspace(q_minus_r_image)
+        Q = (Z / B)
+
+        return Q.rank()
+
+    
+    def homology_at_old(self,q):
         # first compute cycles Z
         print "computing homology at q=" + str(q) 
         r = 2^(self.n + 1) - 1
@@ -88,6 +114,33 @@ class K:
         print Q
         return Q
 
+    def qth_differential_as_matrix(self,q):
+        """
+        We know the first non-trival differential for K(n)(-) is given by Q(n)(-)
+        This will write the d^(q,*) as a matrix 
+        
+        # Example 1 (cont)
+        # In Gr(2,4) we have that d(w1) = w1^4
+        # H(Gr(2,4);Z/2) has generators w1w2^2,w1^2w2, and w1^4
+        # hence d(w1) as a matrix should be [0,0,1]
+        sage: g = Gr(2,4)
+        sage: k = K(1,g) 
+        sage: k.qth_differential_as_matrix(1)
+        [0]
+        [0]
+        [1]
+        """
+        r = 2^(self.n + 1) - 1
+        q_basis = self.Gr.additive_basis_for_qth_cohomology(q)
+        # q_plus_r_basis = self.Gr.additive_basis_for_qth_cohomology(q+r)
+
+        image_under_d = [self.d(b) for b in q_basis]
+        
+        columns = []
+        for x in image_under_d: 
+            columns.append(self.Gr.coordinate_vector_in_qth_basis(x,q+r))
+        return Matrix(FiniteField(2),columns).T
+
     def test_d_on_all_gens_of_Gr(self):
         for H in self.Gr.H:
             for q in H:
@@ -145,6 +198,7 @@ class K:
             degree = self.kth_diff_degree(k)
             print degree
             E_prime = E
+            # E_prime = E.copy()
             for i,z in enumerate(E):
                 # print E3
                 # print "degree", degree
@@ -152,8 +206,13 @@ class K:
                 # E3[i] -= killed
                 # E3[i+degree] -= killed
                 if i+degree < len(E) and E[i+degree] != 0:
-                    E_prime[i] = 0
+                    print "i", E[i]
+                    print "i+d", E[i+degree]
                     E_prime[i+degree] -= E[i]
+                    E_prime[i] = 0
+                    print "i'", E_prime[i]
+                    print "i+d'", E_prime[i+degree]
+            print E_prime
             E = E_prime
             k += 1
             # print k
