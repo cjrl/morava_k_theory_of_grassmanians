@@ -20,7 +20,7 @@ class K:
         """
         #  RP = Gr_1
         if self.Gr.d == 1:
-            print element.degree()
+            # print element.degree()
             if Mod(element.degree(),2) == 0:
                 return 0
             # print("test")
@@ -33,18 +33,84 @@ class K:
         # Gr_d, d > 1
         return self.Gr.normal_form(self.Gr.Q(self.n)(element))
 
-    def homology_at(self,q):
+    def unreduced_d(self,element):
+        """
+        This is the first non-trivial differential in the AHSS for K(n)(-)
+        
+        # Example 1
+        # For K(1) d = Q(1) = Sq2Sq1 + Sq2Sq1
+        # hence d(w1) = w1^4
+        # in Gr(2,c) with c >= 4 otherwise w1^4 is not a generator for 4th homology
+        sage: g = Gr(2,4)
+        sage: k = K(1,g) 
+        sage: k.d(g.W[1])
+        w1^4
+        """
+        #  RP = Gr_1
+        if self.Gr.d == 1:
+            print element.degree()
+            if Mod(element.degree(),2) == 0:
+                return 0
+            # print("test")
+            # print 2*2^self.n - 1
+            # print(self.Gr.R.gens()[0]^(2*2^self.n - 1))
+            # print "mul by", self.Gr.R.gens()[0]^(2*2^self.n-1)
+            return self.Gr.normal_form(element * self.Gr.R.gens()[0]^(2*2^self.n-1))
+            # return self.Gr.normal_form(element^(2^self.n))
+
+        # Gr_d, d > 1
+        return self.Gr.Q(self.n)(element)
+
+    def cycles_vector_space_at(self,q):
+        r = 2^(self.n + 1) - 1
+        qth_M = self.qth_differential_as_matrix(q)
+
+        Z = qth_M.right_kernel()
+        return Z
+
+    def homology_vector_space_at(self,q):
         r = 2^(self.n + 1) - 1
         qth_M = self.qth_differential_as_matrix(q)
 
         q_minus_r_basis = self.Gr.additive_basis_for_qth_cohomology(q-r)
-        q_minus_r_image = [self.Gr.coordinate_vector_in_qth_basis(self.d(b),q) for b in q_minus_r_basis]
+        q_minus_r_image = [vector(self.Gr.coordinate_vector_in_qth_basis(self.d(b),q)) for b in q_minus_r_basis]
         
         Z = qth_M.right_kernel()
         B = Z.subspace(q_minus_r_image)
         Q = (Z / B)
 
+        return Q
+
+    def image_ranks(self):
+        return [self.image_rank_at(q) for q in range(1,self.Gr.top_cohomological_dim + 1)]
+    
+    def image_rank_at(self,q):
+        # r = 2^(self.n + 1) - 1
+        # r = 0
+        # qth_M = self.qth_differential_as_matrix(q)
+
+        # q_minus_r_basis = self.Gr.additive_basis_for_qth_cohomology(q-r)
+        # q_minus_r_image = [vector(self.Gr.coordinate_vector_in_qth_basis(self.d(b),q)) for b in q_minus_r_basis]
+        
+        # Z = qth_M.right_kernel()
+        # B = Z.subspace(q_minus_r_image)
+
+        # return B.rank()
+
+        return self.qth_differential_as_matrix(q).rank()
+    
+    def homology_at(self,q):
+        Q = self.homology_vector_space_at(q)
         return Q.rank()
+
+    def cycle_ranks(self):
+        return [self.cycle_rank_at_q(q) for q in range(1,self.Gr.top_cohomological_dim + 1)]
+    
+    def cycle_rank_at_q(self,q):
+        # r = 2^(self.n + 1) - 1
+        qth_M = self.qth_differential_as_matrix(q)
+        Z = qth_M.right_kernel()
+        return Z.rank()
 
     def qth_differential_as_matrix(self,q):
         """
@@ -99,25 +165,34 @@ class K:
                     n = m/2
                 else:
                     n = (m-1)/2
-                print "n=",n
+                # print "n=",n
                 return binomial(n,k)
             else: # Gr_d d odd
                 k = (self.Gr.d - 1)/2
                 if Mod(m,2) == 1:
                     n = (m-1)/2
-                    print "n=",n
+                    # print "n=",n
                     return binomial(n,k)
                 else:
                     n = (m - 2)/2
-                    print "n=",n
+                    # print "n=",n
                     return 2*binomial(n,k)
             
             
         # the +1 is for the added basepoint
         return 1+sum([self.homology_at(q) for q in range(1,self.Gr.top_cohomological_dim + 1)])
 
+    # def gen_cycles(self):
+    #     return [[x for x in H if self.d(x) == 0] for H in self.Gr.H]
+    
+    def second_page_ranks(self):
+        return [len(gens) for gens in self.Gr.H][1:]
+    
     def third_page_ranks(self):
-        return [self.homology_at(q) for q in range(1,self.Gr.top_cohomological_dim + 1)]
+        return [1]+[self.homology_at(q) for q in range(1,self.Gr.top_cohomological_dim + 1)]
+
+    def gens_that_are_cycles(self):
+        return [[x for x in H if self.d(x) == 0] for H in self.Gr.H]
 
     def minimum_possible_rank(self):
         if self.n == 0:
@@ -128,7 +203,7 @@ class K:
         while self.k_differential_possibly_nontrivial(k):
             # print self.k_differential_possibly_nontrivial(k)
             degree = self.kth_diff_degree(k)
-            print degree
+            # print degree
             E_prime = E
             # E_prime = E.copy()
             for i,z in enumerate(E):
@@ -138,13 +213,13 @@ class K:
                 # E3[i] -= killed
                 # E3[i+degree] -= killed
                 if i+degree < len(E) and E[i+degree] != 0:
-                    print "i", E[i]
-                    print "i+d", E[i+degree]
+                    # print "i", E[i]
+                    # print "i+d", E[i+degree]
                     E_prime[i+degree] -= E[i]
                     E_prime[i] = 0
-                    print "i'", E_prime[i]
-                    print "i+d'", E_prime[i+degree]
-            print E_prime
+                    # print "i'", E_prime[i]
+                    # print "i+d'", E_prime[i+degree]
+            # print E_prime
             E = E_prime
             k += 1
             # print k
@@ -169,5 +244,59 @@ class K:
         if self.Gr.top_cohomological_dim >= second_possible_diff_degree:
             return True
         return False
-    
 
+    def output_SS_code(self):
+        v_n_degree = 2*(2^self.n-1)
+
+        pattern_code = "\sseqnewclasspattern{tower}{"
+
+        rows = max([len(classes) for classes in self.Gr.H])
+
+        for i in range(1,rows+1):
+            pattern_code+="".join([str((0,round(a * (0.13),2))) for a in range(0,i)]) + ";\n"
+
+        pattern_code += "}\n"
+            
+        code  = """
+\\begin{sseqdata}[name = temp,
+                    cohomological Serre grading,
+                    classes = fill,
+                    class labels= {above =  0.3em}]\n"""
+        for degree, classes in enumerate(self.Gr.H):
+            # code += "\\class[circlen ="+ str(len(classes))+" ]("+str(degree)+",0)"
+            for x in classes:
+                code += "\\class("+str(degree)+",0)"
+                code += "\\class("+str(degree)+","+str(-v_n_degree)+")"
+            code += "\n"
+        code += "\\end{sseqdata}"
+        return pattern_code+code
+        
+
+    def output_SS_code_after_first_diff(self):
+        v_n_degree = 2*(2^self.n-1)
+
+        pattern_code = "\sseqnewclasspattern{tower}{"
+
+        rows = max([len(classes) for classes in self.Gr.H])
+
+        for i in range(1,rows+1):
+            pattern_code+="".join([str((0,round(a * (0.13),2))) for a in range(0,i)]) + ";\n"
+
+        pattern_code += "}\n"
+
+        ranks = [1]+self.third_page_ranks()
+        
+        code  = """
+\\begin{sseqdata}[name = temp,
+                    cohomological Serre grading,
+                    classes = fill,
+                    class labels= {above =  0.3em}]\n"""
+        for degree, class_size in enumerate(ranks):
+            classes = range(class_size)
+            # code += "\\class[circlen ="+ str(len(classes))+" ]("+str(degree)+",0)"
+            for x in classes:
+                code += "\\class("+str(degree)+",0)"
+                code += "\\class("+str(degree)+","+str(-v_n_degree)+")"
+            code += "\n"
+        code += "\\end{sseqdata}"
+        return pattern_code+code

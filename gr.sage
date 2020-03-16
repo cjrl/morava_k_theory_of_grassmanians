@@ -5,9 +5,20 @@ class Gr:
     sage: len(g.H) - 1 == g.top_cohomological_dim
     True
     
+    # Check that the generated ideal yields a ring of the right dimension
+    sage: d,c = 2,4
+    sage: Gr(d,c).ideal.vector_space_dimension() == binomial(d+c,d)
+    True
+    
+    sage: d,c = 3,6
+    sage: Gr(d,c).ideal.vector_space_dimension() == binomial(d+c,d)
+    True
+
+    sage: d,c = 2,1
+    sage: Gr(d,c).ideal.vector_space_dimension() == binomial(d+c,d)
+    True
     
     """
-    # only works for odd d right now
     def __init__(self, d,c):
         self.d =d 
         self.c = c
@@ -16,7 +27,7 @@ class Gr:
         self.S = PolynomialRing(FiniteField(2),",".join(self.ws)+","+",".join(self.wbars))
         
         # Constructs Cohomology Ring 
-        self.R = PolynomialRing(FiniteField(2),",".join(self.ws))
+        self.R = PolynomialRing(FiniteField(2),",".join(self.ws),order = "deglex")
         self.W = [1]+[self.R.gens()[i - 1] for i in range(1,self.d + 1)]
         self.sq_dict = {}
 
@@ -45,7 +56,10 @@ class Gr:
         sage: g.coordinate_vector_in_qth_basis(word,4)
         [1, 0, 0, 1]
         """
+        # print word
         basis = self.additive_basis_for_qth_cohomology(q)
+        if word == 0:
+            return [0 for b in basis]
         return [word.monomial_coefficient(self.normal_form(b)) for b in basis]
         return 0
         
@@ -209,13 +223,20 @@ class Gr:
 
         x,y = self.split_off_letter(word)
 
+        # step = "Sq("+str(i)+","+str(expression)+") = "
+        # step_answer = "Sq("+str(i)+","+str(expression)+") = "
+
         answer = 0
         for j in range(i+1):
             answer = self.R(answer)
-            # print "sq " + str(i-j) +" " + str(x)+ " sq " + str(j) + " " + str(y)
+            # step += "Sq(" + str(i-j) +"," + str(x)+ ")Sq(" + str(j) + "," + str(y) + ")+"
             s1 = self.R(self.Sq(i-j,x))
             s2 = self.R(self.Sq(j,y))
+            # step_answer += str(s1)+"*"+str(s2)+"+"
             answer += s1*s2
+
+        # print step[:-1]
+        # print step_answer[:-1]
         return answer
 
     def split_off_letter(self,word):
@@ -257,7 +278,23 @@ class Gr:
 
     def wu_formula(self,i,j):
         value = 0
+        # step = "WU: Sq("+str(i)+","+"w"+str(j)+") = "
         for t in range(0,i+1):
             value += binomial(j+t-i-1,t)*self.w(i-t)*self.w(j+t)
+            # print t
+            # print value
+            # step += str(binomial(j+t-i-1,t))+"w"+str(i-t)+"*w"+str(j+t)+"+"
+        # print step[:-1] + " = " + str(value)
         return value
+
+    def element_degree(self,element):
+        if element == 0:
+            return 0
+        return self.word_degree(list(element)[0][1])
+
+    def word_degree(self,word):
+        degree =  word.exponents()[0] # for univariant 
+        if len(self.R.gens()) > 1:
+            degree = sum([(x+1)*e for x,e in enumerate(word.exponents()[0])])
+        return degree
     
