@@ -1,4 +1,4 @@
-# A = K(n,Gr(2,2^(n+1)+2*t+2)).third_page_ranks()
+
 # B = K(n,Gr(2,2^(n+1)+2*t+1)).third_page_ranks()
 # print Matrix([[i for i in range(1,29)],A,B+[0,0]])
 
@@ -166,28 +166,32 @@ def homology_of_cofiber(c,n):
 
 # print [1 if x != 0 else x for x in homology_of_cofiber(10,3)]
 
-n = 3
-k = 2^(n+1)+2
+n = 2
+i = 5
+k = 2^(n+1)+2*i+1
+d = 2^(n+1)+1
+# n = 1
+# k = 2^(n+1)+2
 m = k
 diff = 2^(n+1)-1
 c = k-2
-print "c =",k-2
-print "skipped =",k+2^(n+1)+8
+# print "c =",k-2
+# print "skipped =",k+2^(n+1)+8
 
-h = Gr(2,k+1-2)
-g = Gr(2,k-2)
+h = Gr(2,c+1)
+g = Gr(2,c)
 
 # A = K(n,Gr(2,k+1-2)).third_page_ranks()
 # B = K(n,Gr(2,k-2)).third_page_ranks()
 # shifted = [1 if x != 0 else x for x in homology_of_cofiber(k-2,n)][2^(n+1)-1:] # odd shift
-shifted = [1 if x != 0 else x for x in homology_of_cofiber(k-2,n)] # even shift
+# shifted = [1 if x != 0 else x for x in homology_of_cofiber(k-2,n)] # even shift
 # print wrap_lists_with_indices([shifted,A,B])
 
-print "C("+str(k)+") =", sum(shifted)
-print "Gr("+str(k+1)+") =", sum(A)
-print "Gr("+str(k)+") =", sum(B)
+# print "C("+str(k)+") =", sum(shifted)
+# print "Gr("+str(k+1)+") =", sum(A)
+# print "Gr("+str(k)+") =", sum(B)
 
-print homology_of_cofiber(k-2,n)
+# print homology_of_cofiber(k-2,n)
 
 # print (new_generators(k-2))
 # print [h.normal_form(h.Q(n)(x)) for x in homology_of_cofiber(k-2,n)]
@@ -221,6 +225,9 @@ def elements_in_g_H_n(g,n):
           element_list.append(element)
      return element_list
 
+def image_under_Qn(g,n):
+     return [g.normal_form(g.Q(n)(x)) for x in elements_in_g_H_n(g,n)]
+
 # m into m+1
 # this is the degree in which the lowest new generator in m appears
 # c + 1 
@@ -237,13 +244,13 @@ def preimage_degree_for_Qn(degree,n):
 
 def alpha(m,n):
      degree = preimage_degree_for_Qn(cofiber_lowest_degree(m),n)+1
-     g = Gr(2,m-2+1)
+     g = Gr(2,m-2)
      return sum(g.H[degree])
 
 def beta(m,n):
      degree = preimage_degree_for_Qn(cofiber_lowest_degree(m),n)+3
-     g = Gr(2,m-2+1)
-     return g.H[degree][0]
+     g = Gr(2,m-2)
+     return sum(g.H[degree])
 
 # print homology_of_cofiber(k-2,n)
 # # print [h.element_degree(x) for x in homology_of_cofiber(k-2,n)]
@@ -285,14 +292,140 @@ def alpha_beta_test(i,n):
      h = Gr(2,c+1)
      g = Gr(2,c)
 
-     first_gen = kernel_elements(c)[cofiber_lowest_degree(m)+1][0]
-     alpha_target = h.normal_form(h.Q(n)(alpha(m,n)))
-     alpha_outcome = (first_gen == alpha_target)
+     print [preimage_under_Qn(n,h.W[1]*x,h) for x in terms_in_wbar_formula(c+1,h)]
+     # first_gen = kernel_elements(c)[cofiber_lowest_degree(m)+1][0]
+     # alpha_target = h.normal_form(h.Q(n)(alpha(m,n)))
+     # alpha_outcome = (first_gen == alpha_target)
+     # print first_gen,h.normal_form(h.Q(n)(alpha(m,n))) 
      # print "alpha: ",alpha_outcome
+     # print alpha_target
+     # print first_gen 
 
-     second_gen = kernel_elements(c)[cofiber_lowest_degree(m)+3][0]
-     beta_target = h.normal_form(h.Q(n)(beta(m,n)))
-     beta_outcome = (second_gen == beta_target)
-     # print "betae: ", beta_outcome
+     # first_gen = homology_of_cofiber(c,n)[cofiber_lowest_degree(m)+1]
+     # # print homology_of_cofiber(c,n)
+     # print first_gen
+     # alpha_target = h.normal_form(h.Q(n)(alpha(m,n)))
+     # # alpha_outcome = h.R(beta(m,n)) in [g.normal_form(x) for x in preimage_under_Qn(n,beta_target,h)]
+     # # print h.normal_form(h.Q(n)(alpha(m,n)))
+     # alpha_outcome = alpha_target == first_gen 
+     # print "alpha: ", alpha_outcome
+     # print [g.normal_form(x) for x in preimage_under_Qn(n,first_gen,h)]
 
-     return alpha_outcome and beta_outcome
+
+     # print g.H[preimage_degree_for_Qn(cofiber_lowest_degree(m)+1,n)]
+
+     # second_gen = homology_of_cofiber(m,n)[cofiber_lowest_degree(m)+3]
+     # beta_target = h.normal_form(h.Q(n)(beta(m,n)))
+     # # beta_outcome = h.R(beta(m,n)) in [g.normal_form(x) for x in preimage_under_Qn(n,beta_target,h)]
+     # # print h.normal_form(h.Q(n)(beta(m,n)))
+     # beta_outcome = (beta_target == second_gen)
+     # print "beta: ", beta_outcome
+     # print [g.normal_form(x) for x in preimage_under_Qn(n,second_gen,h)]
+     # # print h.W[1]^preimage_degree_for_Qn(cofiber_lowest_degree(m)+3,n)
+     # # print g.normal_form(h.W[1]^preimage_degree_for_Qn(cofiber_lowest_degree(m)+3,n))
+     # # print [g.normal_form(x) for x in preimage_under_Qn(n,second_gen,h)]
+     # # print g.H[preimage_degree_for_Qn(cofiber_lowest_degree(m)+3,n)]
+     # # print beta(m,n)
+     # # print homology_of_cofiber(m,n)[cofiber_lowest_degree(m)+3]
+     # return alpha_outcome and beta_outcome
+
+
+def multiple_alpha_beta_tests():
+    for i in range(1,10):
+        for n in range(1,5):
+            print 2*i,n
+            outcome = alpha_beta_test(2*i,n)
+            print outcome
+            # if not outcome:
+            #      return False
+
+def preimages():
+    for i in range(1,10):
+        for n in range(1,5):
+            print 2*i,n
+            m = 2^(n+1)+2*i
+            c = m - 2
+            h = Gr(2,c+1)
+            print h.Q(n)(h.wbar_expression_in_w(c+1))==h.W[1]^(2^(n+1)-1)*h.wbar_expression_in_w(c+1)
+
+
+def conj_gen(a,b,h):
+     return h.W[1]^(a-1)*h.W[2]^(b-2^n+1)
+
+def difference():
+    preimage = preimage_under_Qn(n,h.W[1]*h.wbar_expression_in_w(c+1),h)
+    print preimage
+    return [g.normal_form(x) - h.wbar_expression_in_w(h.element_degree(preimage[0])) for x in preimage]
+
+def recursive_wbar_test(a):
+     h = Gr(2,a+2)
+     return h.wbar_expression_in_w(a) == h.W[1]*h.wbar_expression_in_w(a-1)+ h.W[2]*h.wbar_expression_in_w(a-2)
+
+def wbar_formula_conjecture(n,l):
+     m = 2^(n+1)+2*l
+     d = 2^(n+1)+1
+     c = m - 2
+     h = Gr(2,c+1)
+     goal = h.normal_form(h.W[1]*h.wbar_expression_in_w(c+1))
+     # conj = h.W[1]^(2*l-1)*h.wbar_expression_in_w(d)
+     # conj += h.W[1]^(2*l-3+d-2)*h.W[2]^2+h.W[1]^(d-1)*h.W[2]^l
+
+     conj = h.W[1]^(2*l-2)*h.wbar_expression_in_w(d)
+     conj += h.W[1]^(2*l-4)*h.W[2]^2*h.wbar_expression_in_w(d-2)
+     conj += h.W[2]^l*h.wbar_expression_in_w(d-2)
+     conj *= h.W[1]
+     print goal
+     print h.normal_form(conj)
+
+
+def terms_in_wbar_formula(l,h):
+     pairs = []
+     for i in range(0,l+1):
+          for j in range(0,l+1):
+               if i + 2*j == l:
+                    if binomial(i+j,i)%2 == 1:
+                        pairs.append(h.W[1]^i*h.W[2]^j)
+     return pairs
+
+def all_d(n,l):
+     d = 2^(n+1)+1
+     m = 2^(n+1)+2*l
+     h = Gr(2,m-2)
+     pairs = []
+     for i in range(0,l+1):
+          for j in range(0,l+1):
+               if i + 2*j == 2*l-2:
+                        pairs.append(h.W[1]^i*h.W[2]^j*h.wbar_expression_in_w(d))
+     # return pairs
+     return [preimage_under_Qn(n,h.W[1]*x,h) for x in pairs]
+
+# find . -name "*.sage" -print | etags -l "python" -
+# ctags --language-force=python --python-types=+l -e "cofiber.sage" 
+
+def commuting_sq_test(c):
+     g = Gr(2,c)
+     h = Gr(2,c+1)
+
+     n = 1
+
+     for gens in h.H:
+          for x in gens:
+               print g.normal_form(h.Q(n)(x)) == g.Q(n)(g.normal_form(x))
+
+
+# for i in range(0,10):
+#      m = 2^(n+1)+2*i +1
+#      c = m - 2
+#      g = Gr(2,m-2)
+#      h = Gr(2,m+1-2)
+#      print g.normal_form(h.W[1]*h.wbar_expression_in_w(c+2))
+
+# this c is for m, h is m+1
+def identify_as_groeb_element(c,element,h):
+    for i in range(1,(c+2)+1):
+        groeb = h.W[1]^i*h.wbar_expression_in_w(c+2)
+        groeb = Gr(2,c+3).normal_form(groeb)
+        print element
+        if element == groeb:
+            return "w1^"+str(i)+"wbar(c+2)"
+    return None
