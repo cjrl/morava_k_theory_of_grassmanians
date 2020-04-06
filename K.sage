@@ -4,6 +4,7 @@ class K:
     def __init__(self, n,Gr):
         self.n = n
         self.Gr = Gr
+        self.diff_degree = 2^(n+1)-1
 
     def d(self,element):
         """
@@ -32,6 +33,27 @@ class K:
 
         # Gr_d, d > 1
         return self.Gr.normal_form(self.Gr.Q(self.n)(element))
+
+    def detailed_homology(self):
+        return [[x for x in gens if self.survives(x)] for gens in self.Gr.H]
+
+    def is_cycle(self,element):
+        return self.d(element) == 0
+
+    def is_in_image(self,element):
+        """
+        Only works for homogeneous degree.
+        """
+        source_degree = self.Gr.element_degree(element) - self.diff_degree
+        if source_degree < 0:
+            return False
+        for gen in self.Gr.all_elements_in_degree_n(source_degree):
+            if self.d(gen) == element:
+                return True
+        return False
+
+    def survives(self,element):
+        return self.is_cycle(element) and not self.is_in_image(element)
 
     def unreduced_d(self,element):
         """
