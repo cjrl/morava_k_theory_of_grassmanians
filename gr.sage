@@ -297,4 +297,11 @@ class Gr:
         if len(self.R.gens()) > 1:
             degree = sum([(x+1)*e for x,e in enumerate(word.exponents()[0])])
         return degree
-    
+
+    def all_elements_in_degree_n(self,n):
+        all_elements = Combinations(self.H[n])
+        element_list = []
+        for list_of_gens in all_elements:
+            element = sum(list_of_gens)
+            element_list.append(element)
+        return element_list

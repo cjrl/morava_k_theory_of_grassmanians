@@ -17,109 +17,6 @@ def wrap_lists_with_indices(lists):
     indices = [range(0,pad_length)]
     return Matrix(indices + padded)
 
-
-def P_k(k):
-    H = [1 for x in range(0,2*k)]
-    for i in range(0,k): 
-        H[i] = 0
-    return H 
-
-def Qn_homology_P_k(n,k):
-    # P_k = RP^(2k-1)/RP^k-1
-    diff_degree = 2^(n+1)-1
-    H = P_k(k) 
-    for i,x in enumerate(H):
-        if i % 2 == 1:
-             if H[i] == 1 and i + diff_degree < len(H):
-                H[i] = 0
-                H[i+diff_degree] = 0
-    return H[1:]
-
-# print wrap_index(Qn_homology_P_k(2,13))
-
-# n = 2
-# k = 2^(n+1)+3
-
-# print "k =",k
-# print "skipped =",k+2^(n+1)
-
-# A = K(n,Gr(2,k+1)).third_page_ranks()
-# B = K(n,Gr(2,k)).third_page_ranks()
-# shifted = [0,0,0]+Qn_homology_P_k(n,k)
-# print wrap_lists_with_indices([A,shifted,B])
-
-# n = 1
-# k = 2^(n+1)+2
-
-# print "k =",k
-# print "skipped =",k+2^(n+1)
-
-# A = K(n,Gr(2,k+2)).third_page_ranks()
-# B = [0,0]+K(n,Gr(2,k)).third_page_ranks()
-# shifted = [0,0]+Qn_homology_P_k(n,k)
-# print wrap_lists_with_indices([A,B])
-
-# n = 2
-# k = 2^(n+1)
-
-# print "k =",k
-# print "skipped =",k+2^(n+1)
-
-# A = K(n,Gr(2,k+1)).third_page_ranks()
-# B = K(n,Gr(2,k)).third_page_ranks()
-# shifted = Qn_homology_P_k(n,k)
-# print wrap_lists_with_indices([A,shifted,B,Qn_homology_P_k(n,k)[3:]])
-# print sum(A)
-# print sum(B)
-# print sum(shifted)
-
-# n = 2
-# k = 2^(n+1)+3
-
-# print "k =",k
-# print "skipped =",k+2^(n+1)
-
-# A = K(n,Gr(2,k+1)).third_page_ranks()
-# B = K(n,Gr(2,k)).third_page_ranks()
-# shifted = [0,0,0]+Qn_homology_P_k(n,k)
-# print wrap_lists_with_indices([A,B,Qn_homology_P_k(n,k)])
-
-# n = 1
-# k = 2^(n+1)+2
-
-# print "k =",k
-# print "skipped =",k+2^(n+1)+4
-
-# g = Gr(2,k+1-2)
-# A = K(n,Gr(2,k+1-2)).third_page_ranks()
-# B = K(n,Gr(2,k-2)).third_page_ranks()
-# # shifted = Qn_homology_P_k(n,k)[2^(n+1)-2:]
-# shifted = Qn_homology_P_k(n,k)
-# # shifted = Qn_homology_P_k(n,k)[-2:]
-# # shifted = [0 for i in range(2^(n+1)-1)]+Qn_homology_P_k(n,k)
-# # shifted2 = shifted + [0 for i in range(20)]
-# C = [A[i]+shifted2[i] for i in range(0,len(A))]
-# print wrap_lists_with_indices([shifted,A,B])
-
-# print sum(A)
-# print sum(B)
-# # print sum([x for i,x in enumerate(shifted) if B[i]!=0])
-# print(sum(shifted))
-
-
-
-# g = Gr(2,k+1)
-# h = Gr(2,k)
-# index = 2*(k+1)-2^(n+1)+1
-# print index
-# print h.H[index]
-# classes = g.H[index]
-# print classes
-# print [g.normal_form(g.Q(n)(x)) for x in classes]
-# x = h.H[index][-1]
-# print x
-
-
 def new_generators(c):
      g = Gr(2,c)
      h = Gr(2,c+1)
@@ -134,22 +31,26 @@ def kernel_elements(c):
           K.append([x+g.normal_form(x) for x in gens])
      return K
 
+def new_generators_d(d,c):
+     g = Gr(d,c)
+     h = Gr(d,c+1)
+     H = [[x for x in gens if i >= len(g.H) or x not in g.H[i]] for i,gens in enumerate(h.H)] 
+     return H
+
+def kernel_elements_d(d,c):
+     g = Gr(d,c)
+     H = new_generators_d(d,c)
+     K = []
+     for gens in H:
+          K.append([x+g.normal_form(x) for x in gens])
+     return K
+
 def conjectured_kernel_elements(c):
      h = Gr(2,c+1)
      K = [[] for i in range(c+1)]
      for i in range(c-1,2*c+1):
           K.append([h.normal_form(h.W[1]^(i-(c-1))*h.wbar_expression_in_w(c+1))])
      return K
-
-# print new_generators(6-2)
-
-# c = 5
-# g = Gr(2,c)
-# h = Gr(2,c+1)
-
-# print kernel_elements(c)
-# print conjectured_kernel_elements(c)
-# print [h.normal_form(g.Q(1)(x[0])) if len(x) == 1 else 0 for x in kernel_elements(c) ]
 
 def homology_of_cofiber(c,n):
     diff = 2^(n+1)-1
@@ -164,46 +65,21 @@ def homology_of_cofiber(c,n):
     return Z
 
 
-# print [1 if x != 0 else x for x in homology_of_cofiber(10,3)]
 
-n = 2
-i = 5
-k = 2^(n+1)+2*i+1
-d = 2^(n+1)+1
-# n = 1
-# k = 2^(n+1)+2
-m = k
-diff = 2^(n+1)-1
-c = k-2
-# print "c =",k-2
-# print "skipped =",k+2^(n+1)+8
+# n = 2
+# i = 5
+# k = 2^(n+1)+2*i+1
+# d = 2^(n+1)+1
+# # n = 1
+# # k = 2^(n+1)+2
+# m = k
+# diff = 2^(n+1)-1
+# c = k-2
+# # print "c =",k-2
+# # print "skipped =",k+2^(n+1)+8
 
-h = Gr(2,c+1)
-g = Gr(2,c)
-
-# A = K(n,Gr(2,k+1-2)).third_page_ranks()
-# B = K(n,Gr(2,k-2)).third_page_ranks()
-# shifted = [1 if x != 0 else x for x in homology_of_cofiber(k-2,n)][2^(n+1)-1:] # odd shift
-# shifted = [1 if x != 0 else x for x in homology_of_cofiber(k-2,n)] # even shift
-# print wrap_lists_with_indices([shifted,A,B])
-
-# print "C("+str(k)+") =", sum(shifted)
-# print "Gr("+str(k+1)+") =", sum(A)
-# print "Gr("+str(k)+") =", sum(B)
-
-# print homology_of_cofiber(k-2,n)
-
-# print (new_generators(k-2))
-# print [h.normal_form(h.Q(n)(x)) for x in homology_of_cofiber(k-2,n)]
-# index = 2*(c+1)-2*diff
- # index = 2
-# print g.H[index]
-# print new_generators(k-2)
-# print [h.normal_form(h.Q(n)(x)) for x in g.H[index]]
-# print sum([h.normal_form(h.Q(n)(x)) for x in g.H[index]])
-# # print homology_of_cofiber(k-2,n)
-
-# print kernel_elements(c) == conjectured_kernel_elements(c)
+# h = Gr(2,c+1)
+# g = Gr(2,c)
 
 def preimage_under_Qn(n,element,g):
      diff = 2^(n+1)-1
@@ -252,47 +128,14 @@ def beta(m,n):
      g = Gr(2,m-2)
      return sum(g.H[degree])
 
-# print homology_of_cofiber(k-2,n)
-# # print [h.element_degree(x) for x in homology_of_cofiber(k-2,n)]
-# preimage = [preimage_under_Qn(n,x,h) for x in homology_of_cofiber(k-2,n)]
-# for i,x in enumerate(preimage):
-#      if x != 0:
-#           print x
-#           H = h.H[len(h.H)-len(preimage)-diff+i]
-#           print H
-#           # print g.H[len(h.H)-len(preimage)-diff+i]
-#           print [y for y in H if y in x]
-#           # print [g.normal_form(y) for y in H if y in x]
-#           # print H[-1]
-#           # print [h.normal_form(h.Q(n)(y)) for y in x]
-#           print homology_of_cofiber(k-2,n)[i]
-#           # con_preimage = h.H[len(h.H)-len(preimage)-diff+i][-1] 
-#           # print "conj preimage", "H: " ,con_preimage
-#           print ""
-#           # diff = 2^(n+1)-1
-#         #   print x
-#         #   # print "H: " ,h.H[len(h.H)-len(preimage)-diff+i] 
-#         #   # print "H: " ,[g.normal_form(x) for x in h.H[len(h.H)-len(preimage)-diff+i] ]
-#         # print homology_of_cofiber(k-2,n)[i]
-#         # # print "preimage: ", x, "->", h.normal_form(h.Q(n)(x))# , homology_of_cofiber(k-2,n)[i]
-#         # # print "conj preimage", "H: " ,h.H[len(h.H)-len(preimage)-diff+i][-1] 
-#         # # print "preimage: ", g.normal_form(x)
 
-# cofib = homology_of_cofiber(k-2,n)
-# x = cofib[13]
-# print x
-# preimage = preimage_under_Qn(n,x,h)
-# print preimage
-# print [h.normal_form(h.Q(n)(x)) for x in preimage]
+# def alpha_beta_test(i,n):
+#      m = 2^(n+1)+i
+#      c = m-2
+#      h = Gr(2,c+1)
+#      g = Gr(2,c)
 
-
-def alpha_beta_test(i,n):
-     m = 2^(n+1)+i
-     c = m-2
-     h = Gr(2,c+1)
-     g = Gr(2,c)
-
-     print [preimage_under_Qn(n,h.W[1]*x,h) for x in terms_in_wbar_formula(c+1,h)]
+#      print [preimage_under_Qn(n,h.W[1]*x,h) for x in terms_in_wbar_formula(c+1,h)]
      # first_gen = kernel_elements(c)[cofiber_lowest_degree(m)+1][0]
      # alpha_target = h.normal_form(h.Q(n)(alpha(m,n)))
      # alpha_outcome = (first_gen == alpha_target)
@@ -330,23 +173,23 @@ def alpha_beta_test(i,n):
      # return alpha_outcome and beta_outcome
 
 
-def multiple_alpha_beta_tests():
-    for i in range(1,10):
-        for n in range(1,5):
-            print 2*i,n
-            outcome = alpha_beta_test(2*i,n)
-            print outcome
-            # if not outcome:
-            #      return False
+# def multiple_alpha_beta_tests():
+#     for i in range(1,10):
+#         for n in range(1,5):
+#             print 2*i,n
+#             outcome = alpha_beta_test(2*i,n)
+#             print outcome
+#             # if not outcome:
+#             #      return False
 
-def preimages():
-    for i in range(1,10):
-        for n in range(1,5):
-            print 2*i,n
-            m = 2^(n+1)+2*i
-            c = m - 2
-            h = Gr(2,c+1)
-            print h.Q(n)(h.wbar_expression_in_w(c+1))==h.W[1]^(2^(n+1)-1)*h.wbar_expression_in_w(c+1)
+# def preimages():
+#     for i in range(1,10):
+#         for n in range(1,5):
+#             print 2*i,n
+#             m = 2^(n+1)+2*i
+#             c = m - 2
+#             h = Gr(2,c+1)
+#             print h.Q(n)(h.wbar_expression_in_w(c+1))==h.W[1]^(2^(n+1)-1)*h.wbar_expression_in_w(c+1)
 
 
 def conj_gen(a,b,h):
@@ -402,15 +245,15 @@ def all_d(n,l):
 # find . -name "*.sage" -print | etags -l "python" -
 # ctags --language-force=python --python-types=+l -e "cofiber.sage" 
 
-def commuting_sq_test(c):
-     g = Gr(2,c)
-     h = Gr(2,c+1)
+# def commuting_sq_test(c):
+#      g = Gr(2,c)
+#      h = Gr(2,c+1)
 
-     n = 1
+#      n = 1
 
-     for gens in h.H:
-          for x in gens:
-               print g.normal_form(h.Q(n)(x)) == g.Q(n)(g.normal_form(x))
+#      for gens in h.H:
+#           for x in gens:
+#                print g.normal_form(h.Q(n)(x)) == g.Q(n)(g.normal_form(x))
 
 
 # for i in range(0,10):
@@ -420,12 +263,141 @@ def commuting_sq_test(c):
 #      h = Gr(2,m+1-2)
 #      print g.normal_form(h.W[1]*h.wbar_expression_in_w(c+2))
 
+def groeb_basis_conj(c):
+    h = Gr(2,c+1)
+    g = Gr(2,c)
+
+    conjecture = []
+    for i in range(0,(c+1)+1):
+         conjecture.append(h.normal_form(h.W[1]^i*h.wbar_expression_in_w(c+1)))
+    print g.ideal.groebner_basis()
+    print conjecture
+    return g.ideal.groebner_basis() == conjecture
+
+     
+
 # this c is for m, h is m+1
 def identify_as_groeb_element(c,element,h):
-    for i in range(1,(c+2)+1):
+    parent_g = Gr(2,c+2) 
+    for i in range(0,(c+2)+1):
         groeb = h.W[1]^i*h.wbar_expression_in_w(c+2)
-        groeb = Gr(2,c+3).normal_form(groeb)
-        print element
+        groeb = parent_g.normal_form(groeb)
+        # print element
         if element == groeb:
             return "w1^"+str(i)+"wbar(c+2)"
     return None
+
+def expand_in_terms_of_groebner(poly,ideal):
+    gb = ideal.groebner_basis()
+    gb = list(gb)
+    steps = [gb[:i] for i in range(len(gb)+1)]
+    expansion = []
+    remainder = 0
+    for step in steps:
+        # print "poly:", poly.reduce(step)
+        if len(step) > 0:
+            quotient = (poly - poly.reduce(step)) / step[-1]
+            # print "quotient:", quotient
+            # print poly,"=(",quotient,")*(",step[-1],")","+(",poly.reduce(step),")"
+            expansion.append([quotient,step[-1]])
+            remainder = poly.reduce(step)
+            # print step[-1]
+        poly = poly.reduce(step)
+    return expansion,remainder
+
+n = 3 
+i = 3
+
+m = 2^(n+1)+2*i
+d = 2^(n+1)+1
+c = m-2
+h = Gr(2,c+1)
+g = Gr(2,c)
+
+gb = h.ideal.groebner_basis()
+
+print groeb_basis_conj(c)
+
+print "Possible Preimage Generators: "
+degree = preimage_degree_for_Qn(c+1,n)
+possible_pairs =[x for x in h.H[degree]]
+print possible_pairs  
+print len(possible_pairs)
+
+print "\n\n a odd b even:"
+
+# degree = preimage_degree_for_Qn(2*(c+1),n)-(2^(n+1)+1)
+
+# a = 1
+# b = (degree - a)/2
+
+# print "a=",a
+# print "b=",b
+# expansion = expand_in_terms_of_groebner(h.W[1]^(a+d-2)*h.W[2]^b,h.ideal)
+
+# for i,line in enumerate(expansion[0]):
+#      # print line
+#      # print line[0],"w1^"+str(i)+"wbar(c+2)" 
+#      print line[0],"g"+str(i)
+#      # print identify_as_groeb_element(c,line[1],h)
+# print expansion[1]
+
+# for a and b odd
+
+a = 0
+b = 1
+
+print a
+print b
+
+print "w2^(b-1)*(wbar(d)+w1^d) expansion:"
+expansion = expand_in_terms_of_groebner(h.W[2]^(b-1)*(h.wbar_expression_in_w(d)+h.W[1]^d),h.ideal)
+
+for i,line in enumerate(expansion[0]):
+     # print line
+     # print line[0],"w1^"+str(i)+"wbar(c+2)" 
+     print line[0],"g"+str(i)
+     # print identify_as_groeb_element(c,line[1],h)
+print expansion[1]
+
+# expansion = expand_in_terms_of_groebner(h.Q(n)(h.W[1]^a*h.W[2]^b),h.ideal)
+
+# # for i,line in enumerate(expansion[0]):
+# #      # print line
+# #      print line[0],"w1^"+str(i)+"wbar(c+2)" 
+# #      # print identify_as_groeb_element(c,line[1],h)
+# # print expansion[1]
+
+# new_list = []
+# for i in range(0,len(possible_pairs)):
+#     print ""
+#     print i
+#     terms = expand_in_terms_of_groebner(h.W[2]^(b-1-i)*(h.wbar_expression_in_w(d)+h.W[1]^d),h.ideal)
+#     print (a,b)
+#     new_line = []
+#     for line in terms[0]:
+#         # print line 
+#         line.pop()
+#         new_line.append(line)
+#     new_line = [1 if x != 0 else 0 for x in flatten(new_line)]
+#     new_list.append(new_line)
+
+# def pretty_print(data):
+#     for i,line in enumerate(data):
+#         line = "".join([str(x) for x in line])
+#         line = str.replace(line,"0"," ")
+#         print line
+
+
+# pretty_print(new_list)
+
+# this looks good
+def g4_conj(n,l):
+     m = 2^(n+1)+2*l+1
+     d = 2^(n+1)+1
+     c = m-2
+     h = Gr(2,c+1)
+     gb = h.ideal.groebner_basis()
+
+     print h.W[2]^(c+1-2^(n+1)+2)*(h.wbar_expression_in_w(d)+h.W[1]^d)
+     print gb[4+2*l]
