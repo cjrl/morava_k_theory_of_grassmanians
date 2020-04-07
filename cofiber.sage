@@ -118,15 +118,15 @@ def preimage_degree_for_Qn(degree,n):
      diff = 2^(n+1)-1
      return degree - diff
 
-def alpha(m,n):
-     degree = preimage_degree_for_Qn(cofiber_lowest_degree(m),n)+1
-     g = Gr(2,m-2)
-     return sum(g.H[degree])
+# def alpha(m,n):
+#      degree = preimage_degree_for_Qn(cofiber_lowest_degree(m),n)+1
+#      g = Gr(2,m-2)
+#      return sum(g.H[degree])
 
-def beta(m,n):
-     degree = preimage_degree_for_Qn(cofiber_lowest_degree(m),n)+3
-     g = Gr(2,m-2)
-     return sum(g.H[degree])
+# def beta(m,n):
+#      degree = preimage_degree_for_Qn(cofiber_lowest_degree(m),n)+3
+#      g = Gr(2,m-2)
+#      return sum(g.H[degree])
 
 
 # def alpha_beta_test(i,n):
@@ -305,14 +305,15 @@ def expand_in_terms_of_groebner(poly,ideal):
         poly = poly.reduce(step)
     return expansion,remainder
 
-n = 3 
-i = 3
+n = 1 
+i = 1
 
 m = 2^(n+1)+2*i
 d = 2^(n+1)+1
 c = m-2
 h = Gr(2,c+1)
 g = Gr(2,c)
+k = K(n,g)
 
 gb = h.ideal.groebner_basis()
 
@@ -344,21 +345,21 @@ print "\n\n a odd b even:"
 
 # for a and b odd
 
-a = 0
-b = 1
+# a = 0
+# b = 1
 
-print a
-print b
+# print a
+# print b
 
-print "w2^(b-1)*(wbar(d)+w1^d) expansion:"
-expansion = expand_in_terms_of_groebner(h.W[2]^(b-1)*(h.wbar_expression_in_w(d)+h.W[1]^d),h.ideal)
+# print "w2^(b-1)*(wbar(d)+w1^d) expansion:"
+# expansion = expand_in_terms_of_groebner(h.W[2]^(b-1)*(h.wbar_expression_in_w(d)+h.W[1]^d),h.ideal)
 
-for i,line in enumerate(expansion[0]):
-     # print line
-     # print line[0],"w1^"+str(i)+"wbar(c+2)" 
-     print line[0],"g"+str(i)
-     # print identify_as_groeb_element(c,line[1],h)
-print expansion[1]
+# for i,line in enumerate(expansion[0]):
+#      # print line
+#      # print line[0],"w1^"+str(i)+"wbar(c+2)" 
+#      print line[0],"g"+str(i)
+#      # print identify_as_groeb_element(c,line[1],h)
+# print expansion[1]
 
 # expansion = expand_in_terms_of_groebner(h.Q(n)(h.W[1]^a*h.W[2]^b),h.ideal)
 
@@ -401,3 +402,31 @@ def g4_conj(n,l):
 
      print h.W[2]^(c+1-2^(n+1)+2)*(h.wbar_expression_in_w(d)+h.W[1]^d)
      print gb[4+2*l]
+
+# for i,gens in enumerate(k.detailed_homology()):
+#      if i == c+1-2^(n+1)+1:
+#           print "c+1-diff",i,gens,[h.normal_form(h.Q(n)(x)) for x in gens]
+#      else:
+#           print i,gens,[h.normal_form(h.Q(n)(x)) for x in gens]
+
+alpha = lambda c,n,g: g.W[1]*g.wbar_expression_in_w(c+1-2^(n+1)+1)
+beta = lambda i,g: g.W[2]^(2*i+1)
+
+def test_conj():
+     for i in range (1,5):
+          for n in range(1,5):
+               m = 2^(n+1)+2*i
+               d = 2^(n+1)+1
+               c = m-2
+               h = Gr(2,c+1)
+               g = Gr(2,c)
+
+               print i,n
+               # print h.Q(n)(h.W[1]*h.wbar_expression_in_w(c+1-2^(n+1)+1))
+               print h.Q(n)(alpha(c,n,h)) == h.W[1]*h.wbar_expression_in_w(c+1)
+               print h.normal_form(h.Q(n)(beta(i,h))) == h.normal_form(h.W[1]^(2*(i+1))*h.wbar_expression_in_w(c+1))
+               
+               # print h.Q(n)(g.W[1]*g.wbar_expression_in_w(c+1-2^(n+1)+1)) == h.W[1]^6*h.wbar_expression_in_w(c+1)
+
+
+test_conj()            

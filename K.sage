@@ -35,7 +35,8 @@ class K:
         return self.Gr.normal_form(self.Gr.Q(self.n)(element))
 
     def detailed_homology(self):
-        return [[x for x in gens if self.survives(x)] for gens in self.Gr.H]
+        all_elements = [self.Gr.all_elements_in_degree_n(i) for i in range(0,self.Gr.top_cohomological_dim+1)]
+        return [[x for x in gens if self.survives(x)] for gens in all_elements]
 
     def is_cycle(self,element):
         return self.d(element) == 0
