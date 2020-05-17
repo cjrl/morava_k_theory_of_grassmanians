@@ -1,4 +1,4 @@
-load("gr.sage")
+# load("gr.sage")
 
 class K:
     def __init__(self, n,Gr):

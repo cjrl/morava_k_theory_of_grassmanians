@@ -62,6 +62,10 @@ class Gr:
             return [0 for b in basis]
         return [word.monomial_coefficient(self.normal_form(b)) for b in basis]
         return 0
+
+    def q_degree_element_from_vector(self,vector,q):
+        basis = self.additive_basis_for_qth_cohomology(q)
+        return sum([vector[i]*basis[i] for i in range(len(vector))])
         
     def w(self,i):
         if i >= len(self.W):

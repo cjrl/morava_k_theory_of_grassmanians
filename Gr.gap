@@ -1,7 +1,8 @@
 LoadPackage("ctbllib");
 
-Gr := function(d,m) 
-    return Concatenation(["Gr","(",String(d),",",String(m),")"]);
+# The type parameter is the Schur indicator of the real rep
+Gr := function(d,m,type) 
+    return Concatenation(["Gr","(",String(d),",",String(m),",",String(type),")"]);
 end;;
 
 dim_eigenspace := function(G,chi,lambda)
@@ -16,14 +17,16 @@ dim_eigenspace := function(G,chi,lambda)
                             * ComplexConjugate( lambda[i] ) ) / Size( t )) / normalizing_coeff;
 end;;
 
-# norm := function(G,chi)
-#     local sum;
-#     sum := 0;
-#     for i in [1..Length(chi)] do
-#         sum := sum + chi[i]*ComplexConjugate(chi[i]);
-#     od;
-#     return sum / Order(G);
-# end;;
+get_real_rep_type := function(G,chi)
+    local indicator;
+    indicator := Indicator(CharacterTable(G),[chi],2)[1];
+    if indicator = 0 then
+        return "C";
+    elif indicator = 1 then
+        return "R";
+    fi;
+    return "H";
+end;;
 
 get_indeterminate := function(name,R)
     local x;
@@ -32,6 +35,11 @@ get_indeterminate := function(name,R)
             return x;
         fi;
     od;
+end;;
+distinct_comb := function(comb)
+    local chis;
+    chis := List(comb, x -> x[2]);
+    return IsDuplicateFree(chis);
 end;;
 
 get_G_fixed_point_formula_for_Gr_d := function(d,chi,irr_list,G)
@@ -42,10 +50,16 @@ get_G_fixed_point_formula_for_Gr_d := function(d,chi,irr_list,G)
     
     for tau in irr_list do
         dim := tau[1];
+        # Display(tau[1]);
+        # Display(d);
         for i in [dim..d] do
             # Display(dim_eigenspace(G,chi,tau));
-            Append(indeterminates,[Gr(i,dim*dim_eigenspace(G,chi,tau))]);
-            Append(gr_list,[[i,tau]]);
+            if i mod dim = 0 and dim_eigenspace(G,chi,tau) <> 0 then
+                # Display(dim_eigenspace(G,chi,tau));
+                Append(indeterminates,[Gr(i / dim,dim_eigenspace(G,chi,tau),get_real_rep_type(G,tau))]);
+                Append(gr_list,[[i,tau]]);
+                # Display(indeterminates);
+            fi;
         od;
     od;
     
@@ -70,25 +84,183 @@ get_G_fixed_point_formula_for_Gr_d := function(d,chi,irr_list,G)
     od;
     
     list := Filtered(list,comb -> Sum(List(comb, x -> x[1])) = d);
+
+    # ensures each rep is contribing one factor in the product
+    list := Filtered(list,comb -> distinct_comb(comb));
     
     expression := 0;
     
     for comb in list do
         expression := expression + 
-        Product(List(comb,x -> get_indeterminate(Gr(x[1],x[2][1]*dim_eigenspace(G,chi,x[2])),R)));
+        Product(List(comb,x -> get_indeterminate(Gr(x[1] / x[2][1],dim_eigenspace(G,chi,x[2]),get_real_rep_type(G,x[2])),R)));
     od;
     return [indeterminates,expression,R];
 end;;
+
+pad_list_with_zeros := function(list,length)
+   while Length(list) < length do
+       Add(list,0);
+   od;
+   return list;
+end;;
+
+composistions := function(d,length)
+    local comp,final,x;
+    comp := Partitions(d);
+    # comp := List(comp, x -> pad_list_with_zeros(x,length));
+    comp := Filtered(comp, x -> Length(x)=length);
+    comp := List(comp,x -> PermutationsList(x));
+    final := [];
+    for x in comp do
+        Append(final,x);
+    od;
+    return final;
+end;; 
 
 wait_for_file_to_exist := function(file_name)
     while not IsExistingFile(file_name) do
         Sleep(2);
         Display("waiting...");
+        Display(file_name);
     od;
+end;;
+
+gr_formula := function(q,m,n)
+    # local k,i;
+    # if n = 0 then
+    #     if q mod 2 = 0 then
+    #         k = q/2;
+    #         if m mod 2 = 0 then
+    #             i := m/2;
+    #         else
+    #             i := (m-1)/2;
+    #         fi;
+    #         return binomial(i,k)+1;
+    #     fi;
+    # fi;
+    if m mod 2 = 0 then
+        return gr_even_formula(q,m,n);
+    fi;
+    return gr_odd_formula(q,m,n);
+end;;
+
+gr_even_formula := function(q,m,n)
+    local l,rank,part,i,j,k,perm;
+    if m < q then
+        return 0;
+    fi;
+    if q <= m and m <= 2^(n+1) then
+        return Binomial(m,q);
+    fi;
+
+    l := (m-2^(n+1))/2;
+    rank := 0;
+    for part in Filtered(composistions(q,2), x-> x[1] mod 2=0) do
+        i := part[1]/2;
+        for perm in composistions(part[2],2) do
+            j := perm[1];
+            k := perm[2];
+            rank := rank + Binomial(l,i)*Binomial(2^n,j)*Binomial(2^n,k);
+        od;
+    od;
+    for part in composistions(q,2) do
+        j := part[1];
+        k := part[2];
+        rank := rank + Binomial(2^n,j)*Binomial(2^n,k);
+    od;
+    for part in Filtered(composistions(q,2), x-> x[1] mod 2=0) do
+        i := part[1]/2;
+        j := part[2];
+        rank := rank + 2*Binomial(l,i)*Binomial(2^n,j);
+    od;
+    rank := rank + 2*Binomial(2^n,q);
+    if q mod 2 = 0 then
+        rank := rank + Binomial(l,q/2);
+    fi;
+    return rank;
+end;;
+
+gr_odd_formula := function(q,m,n)
+    local l,rank,part,i,j,k,perm;
+    if m < q then
+        return 0;
+    fi;
+    if q <= m and m <= 2^(n+1) then
+        return Binomial(m,q);
+    fi;
+
+    l := (m+1-2^(n+1))/2;
+    rank := 0;
+    for part in Filtered(composistions(q,2), x-> x[1] mod 2=0) do
+        i := part[1]/2;
+        for perm in composistions(part[2],2) do
+            j := perm[1];
+            k := perm[2];
+            rank := rank + Binomial(l,i)*Binomial(2^n-1,j)*Binomial(2^n,k);
+        od;
+    od;
+    for part in composistions(q,2) do
+        j := part[1];
+        k := part[2];
+        rank := rank + Binomial(2^n-1,j)*Binomial(2^n,k);
+    od;
+    for part in Filtered(composistions(q,2), x-> x[1] mod 2=0) do
+        i := part[1]/2;
+        j := part[2];
+        rank := rank + Binomial(l,i)*Binomial(2^n-1,j);
+        rank := rank + Binomial(l,i)*Binomial(2^n,j);
+    od;
+    rank := rank + Binomial(2^n-1,q);
+    rank := rank + Binomial(2^n,q);
+    if q mod 2 = 0 then
+        rank := rank + Binomial(l,q/2);
+    fi;
+    return rank;
 end;;
  
 Gr_from_String := function(gr) 
     return SplitString(gr{[4..Length(gr)-1]},",");
+end;;
+
+gr1_formula := function(m,n)
+    local l; # Gr(1,m)=RP^(m-1)=RP^(l-1)
+    l:= m;
+    if m = 0 then
+        return 0;
+    fi;
+    if m = 1 then
+        return 1;
+    fi;
+    if l < 2^(n+1) then
+        return l;
+    elif (l mod 2) = 0 then
+        return 2^(n+1);
+    elif (l mod 2) = 1 then
+        return 2^(n+1)-1;
+    fi;
+end;;
+
+gr2_formula := function(m,n)
+    local l;
+    if n = 0 then
+        if (m mod 2) = 0 then
+            return m /2;
+        else 
+            return (m-1)/2;
+        fi;
+    fi;
+    if m = 1 then
+        return 1;
+    fi;
+    if 2 <= m and m <= 2^(n+1) then
+        return Binomial(m,2);
+    elif (m mod 2) = 0 then
+        l := (m - 2^(n+1))/2;
+        return 2^(2*n+1)-2^n+l;
+    elif (m mod 2) = 1 then
+        l := (m - 2^(n+1)+1)/2;
+        return 2^(2*n+1)-2^(n+1)-2^n+1+l;
+    fi;
 end;;
 
 eval_Gr := function(gr,morava_n)
@@ -96,6 +268,20 @@ eval_Gr := function(gr,morava_n)
     file_name := Concatenation("/Users/Chris/box/research/general_grassmannian/gr_data/",gr,"_",String(morava_n));
     # Display(file_name);
     gr_numbers := Gr_from_String(gr);
+    
+    if gr_numbers[3] = "C" then
+        return Binomial(Int(gr_numbers[2]),Int(gr_numbers[1]));
+    fi;
+    
+    if gr_numbers[3] = "R" then
+        # if gr_numbers[1] = "1" then
+        #     return gr1_formula(Int(gr_numbers[2]),morava_n);
+        # elif gr_numbers[1] = "2" then
+        #     return gr2_formula(Int(gr_numbers[2]),morava_n);
+        # fi;
+        return gr_formula(Int(gr_numbers[1]),Int(gr_numbers[2]),morava_n);
+    fi;
+    
     if not IsExistingFile(file_name) then
     Exec(Concatenation(["osascript sage_bridge.scpt ",String(morava_n)," ",gr_numbers[1]," ",gr_numbers[2]]));
     fi;
@@ -167,11 +353,11 @@ test_chi := function(d,G,H,chi,type,drop,coeff,chi_list,chi_H_list)
     kH_n := evaluate_G_fixed_points_at_n(d,chi_H,chi_H_list,H,type+drop); 
     kH_n_minus_1 := evaluate_G_fixed_points_at_n(d,chi_H,chi_H_list,H,type+drop-1); 
     
-    kH_n_min := evaluate_min_G_fixed_points_at_n(d,chi_H,chi_H_list,H,type+drop); 
-    kH_n_minus_1_min := evaluate_min_G_fixed_points_at_n(d,chi_H,chi_H_list,H,type+drop-1); 
+    # kH_n_min := evaluate_min_G_fixed_points_at_n(d,chi_H,chi_H_list,H,type+drop); 
+    # kH_n_minus_1_min := evaluate_min_G_fixed_points_at_n(d,chi_H,chi_H_list,H,type+drop-1); 
 
-    # condition := kH_n_minus_1 < kG and kG <= kH_n;
-    condition := kH_n_minus_1_min < kG and kG <= kH_n;
+    condition := kH_n_minus_1 < kG and kG <= kH_n;
+    # condition := kH_n_minus_1_min < kG and kG <= kH_n;
     # condition := condition and (kH_n_minus_1 - kG <= 32);
     # condition := kH_n_minus_1 = kG and kG = 496;
     
@@ -180,8 +366,8 @@ test_chi := function(d,G,H,chi,type,drop,coeff,chi_list,chi_H_list)
     Display(kG);
     Display([kH_n_minus_1,kH_n]);
 
-    Display("Min Ranks:");
-    Display([kH_n_minus_1_min,kH_n_min]);
+    # Display("Min Ranks:");
+    # Display([kH_n_minus_1_min,kH_n_min]);
     if condition then
         Display(coeff);
         Display(kG);
@@ -318,246 +504,3 @@ test_coeff := function(d,G,H,type,drop,coeff)
     chi := Character(CharacterTable(G),chi);
     test_chi(d,G,H,chi,type,drop,coeff,chi_list,chi_H_list);
 end;;
-# G := DihedralGroup(8);
-# chi := 2*Sum(Irr(G))+Irr(G)[5];
-# irr_list := Irr(G);
-
-# H := AllSubgroups(G)[3];
-# irr_H_list := Irr(H);
-
-# test_chi(1,G,H,chi,0,2,[2,2,2,2,1],irr_list,irr_H_list);
-
-
-# G := SmallGroup(16,6);
-# H := AllSubgroups(G)[3];
-# hunt(1,G,H,0,2); # [1..3]
-
-
-# G = D16 [ 16, 7 ]
-# G := SmallGroup(16,7);
-# H := AllSubgroups(G)[3];
-
-
-# chi := 8*get_real_reps(G)[1]+get_real_reps(G)[7];
-
-# chi_list := get_real_reps(G);
-# chi_H_list := get_real_reps(H);
-
-# gap> test_chi(3,G,H,chi,0,3,[],chi_list,chi_H_list);
-
-# G := SmallGroup(16,3);
-# H := AllSubgroups(G)[1];
-
-# hunt(2,G,H,0,3); #[1..3]
-
-# Coefficients
-# [ 8, 8, 8, 8, 8, 8 ]
-# Computed at n=0
-# 6*Gr(1,8)^2+4*Gr(2,8)+2*Gr(2,16)
-# [ "Gr(1,8)", "Gr(2,8)", "Gr(2,16)" ]
-# [ 2, 4, 8 ]
-# Computed at n=3
-# Gr(2,64)
-# [ "Gr(1,64)", "Gr(2,64)" ]
-# [ 16, 144 ]
-# Computed at n=2
-# Gr(2,64)
-# [ "Gr(1,64)", "Gr(2,64)" ]
-# [ 8, 56 ]
-# 56
-# [ 56, 144 ]
-# false
-# done!
-# gap> 
-
-# This is wrong since empty set
-# Coefficients
-# [ 1, 2, 2, 2, 1, 1 ]
-# Computed at n=0
-# 3*Gr(1,1)*Gr(1,2)+3*Gr(1,2)^2+Gr(2,1)+5*Gr(2,2)
-# [ "Gr(1,1)", "Gr(2,1)", "Gr(1,2)", "Gr(2,2)" ]
-# [ 1, 1, 2, 1 ]
-# Computed at n=3
-# Gr(2,11)
-# [ "Gr(1,11)", "Gr(2,11)" ]
-# [ 11, 55 ]
-# Computed at n=2
-# Gr(2,11)
-# [ "Gr(1,11)", "Gr(2,11)" ]
-# [ 7, 23 ]
-# 24
-# [ 23, 55 ]
-# [ 1, 2, 2, 2, 1, 1 ]
-# 24
-# [ 23, 55 ]
-# true
-# mkdir: ./output/[ 16, 3, 1 ]: File exists
-# true
-# done!
-# gap>
-
-# Coefficients
-# [ 7, 7, 7, 7, 7, 7, 7, 7 ]
-# Computed at n=0
-# 6*Gr(1,7)^2+4*Gr(2,7)+2*Gr(2,28)+2*Gr(2,14)
-# [ "Gr(1,7)", "Gr(2,7)", "Gr(2,28)", "Gr(2,14)" ]
-# [ 1, 3, 14, 7 ]
-# Computed at n=2
-# Gr(2,84)
-# [ "Gr(1,84)", "Gr(2,84)" ]
-# [ 8, 66 ]
-# Computed at n=1
-# Gr(2,84)
-# [ "Gr(1,84)", "Gr(2,84)" ]
-# [ 4, 46 ]
-# 60
-# [ 46, 66 ]
-# [ 7, 7, 7, 7, 7, 7, 7, 7 ]
-# 60
-# [ 46, 66 ]
-# true
-# mkdir: ./output/[ 16, 3, 1 ]: File exists
-# true
-# done!
-# gap> 
-
-# Coefficients Range [2,3]
-# [ 2, 2, 2, 2, 2, 3, 2, 2 ]
-# Computed at n=0
-# 6*Gr(1,2)^2+2*Gr(2,4)+4*Gr(2,2)+Gr(2,12)+Gr(2,8)
-# [ "Gr(1,2)", "Gr(2,2)", "Gr(2,8)", "Gr(2,12)", "Gr(2,4)" ]
-# [ 2, 0, 4, 6, 2 ]
-# Computed at n=3
-# Gr(2,26)
-# [ "Gr(1,26)", "Gr(2,26)" ]
-# [ 16, 125 ]
-# Computed at n=2
-# Gr(2,26)
-# [ "Gr(1,26)", "Gr(2,26)" ]
-# [ 8, 37 ]
-# 38
-# [ 37, 125 ]
-# [ 2, 2, 2, 2, 2, 3, 2, 2 ]
-# 38
-# [ 37, 125 ]
-# true
-# mkdir: ./output/[ 16, 3, 1 ]: File exists
-# true
-# done!
-# gap> hunt(2,G,H,0,3);
-
-#
-# G := DihedralGroup(8);
-# H := AllSubgroups(G)[3];
-
-hunt_for_Gr_with_trival_higher_K2 := function(d,hunt_range)
-    local G,H, chi_list, chi_H_list,coeff,chi,such_Gr_list;
-    
-    G := DihedralGroup(8);
-    H := AllSubgroups(G)[1];
-
-    chi_list := get_real_reps(G);
-    chi_H_list := get_real_reps(H);
-    
-    such_Gr_list := [];
-    
-    
-    for coeff in Tuples(hunt_range,Length(chi_list)) do
-        chi := 0;
-        for i in [1..(Length(chi_list))] do
-            chi := chi + coeff[i]*chi_list[i];
-            Print(coeff[i],dim_eigenspace(G,chi,chi_list[i]),"\n");
-        od;
-        chi := Character(CharacterTable(G),chi);
-        Add(such_Gr_list,test_chi_for_Gr_higher_diffs(d,G,H,chi,0,3,coeff,chi_list,chi_H_list));
-    od;
-    
-    such_Gr_list := Filtered(such_Gr_list, x -> (x[1] = true));
-    such_Gr_list := DuplicateFreeList(such_Gr_list);
-    Display(List(such_Gr_list,x->x[2]));
-    
-    
-end;;
-
-test_chi_for_Gr_higher_diffs := function(d,G,H,chi,type,drop,coeff,chi_list,chi_H_list)
-    local kG,chi_H,kH_n,kH_n_minus_1,condition;
-    # kG := get_nth_(G,chi,chi_list,type);
-    kG := evaluate_G_fixed_points_at_n(d,chi,chi_list,G,type);
-    
-    # Display("=--------=");
-    # Display(IsSubgroup(G,H));
-    # Display(IsSubgroup(UnderlyingGroup(CharacterTable(G)),H));
-    
-    chi_H := RestrictedClassFunction(chi,CharacterTable(H));
-    
-    kH_n := evaluate_G_fixed_points_at_n(d,chi_H,chi_H_list,H,type+drop); 
-    kH_n_minus_1 := evaluate_G_fixed_points_at_n(d,chi_H,chi_H_list,H,type+drop-1); 
-    
-    kH_n_min := evaluate_min_G_fixed_points_at_n(d,chi_H,chi_H_list,H,type+drop); 
-    kH_n_minus_1_min := evaluate_min_G_fixed_points_at_n(d,chi_H,chi_H_list,H,type+drop-1); 
-
-    # condition := kH_n_minus_1 <= kG and kG < kH_n;
-    condition := (kH_n_minus_1 = kG and kG <= kH_n) and (kG <= kH_n_min) ;
-    
-    
-    if condition then
-        Display(coeff);
-        Display(kG);
-        Display([kH_n_minus_1,kH_n]);
-
-        Display("Min Ranks:");
-        Display([kH_n_minus_1_min,kH_n_min]);
-        Display(get_G_fixed_point_formula_for_Gr_d(d,chi,chi_H_list,H)[2]);
-    fi;
-    return [condition,get_G_fixed_point_formula_for_Gr_d(d,chi,chi_H_list,H)[2]];
-end;;
-
-
-# gap> hunt_for_Gr_with_trival_higher_K2(2,[1,2,3,4,5]);
-# [ Gr(2,10), Gr(2,12), Gr(2,14), Gr(2,16), Gr(2,18), Gr(2,11), Gr(2,13), 
-#   Gr(2,15), Gr(2,17), Gr(2,19), Gr(2,20), Gr(2,21), Gr(2,22), Gr(2,23), 
-#   Gr(2,24), Gr(2,25), Gr(2,26), Gr(2,27) ]
-
-# SmallGroup(16,3);
-# Coefficients
-# [ 2, 2, 2, 2, 2, 3, 3, 3 ]
-# Computed at n=1
-# Fixed Point Formula:
-# 6*Gr(1,2)^2+Gr(2,4)+4*Gr(2,2)+3*Gr(2,6)
-# [ "Gr(1,2)", "Gr(2,2)", "Gr(2,4)", "Gr(2,6)" ]
-# [ 2, 1, 6, 7 ]
-# Computed at n=0
-# Fixed Point Formula:
-# 6*Gr(1,2)^2+Gr(2,4)+4*Gr(2,2)+3*Gr(2,6)
-# [ "Gr(1,2)", "Gr(2,2)", "Gr(2,4)", "Gr(2,6)" ]
-# [ 2, 1, 2, 3 ]
-# Computed at n=4
-# Fixed Point Formula:
-# Gr(2,30)
-# [ "Gr(1,30)", "Gr(2,30)" ]
-# [ 30, 435 ]
-# Computed at n=3
-# Fixed Point Formula:
-# Gr(2,30)
-# [ "Gr(1,30)", "Gr(2,30)" ]
-# [ 16, 127 ]
-# Min Computed at n=4
-# Gr(2,30)
-# [ "Gr(1,30)", "Gr(2,30)" ]
-# [ 30, 435 ]
-# Min Computed at n=3
-# Gr(2,30)
-# [ "Gr(1,30)", "Gr(2,30)" ]
-# [ 16, 41 ]
-# k0: 39
-# 55
-# [ 127, 435 ]
-# Min Ranks:
-# [ 41, 435 ]
-# [ 2, 2, 2, 2, 2, 3, 3, 3 ]
-# 55
-# [ 127, 435 ]
-# mkdir: ./output/[ 16, 3, 1 ]: File exists
-# true
-# done!
-# gap> 
