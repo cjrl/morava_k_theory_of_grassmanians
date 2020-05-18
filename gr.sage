@@ -43,7 +43,7 @@ class Gr:
 
         # print "Detereming Cohomology..."
         self.top_cohomological_dim = self.d*self.c
-        pool = Pool
+        pool = Pool()
         self.H = pool.map(self.additive_basis_for_qth_cohomology, range(self.top_cohomological_dim+1))
 
         # print sum([len(y) for y in self.H])
