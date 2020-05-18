@@ -125,18 +125,18 @@ def wrap_lists_with_indices(lists):
     padded = [pad_list_to_length(x,pad_length) for x in lists]
     indices = [range(0,pad_length)]
     return Matrix(indices + padded)
-d = 4
-n = 3
-l = 1
-l_copy = l
+# d = 5
+# n = 2
+# l = 1
+# l_copy = l
 
-m = 2^(n+1)+2*l
-c = m - d
+# m = 2^(n+1)+2*l
+# c = m - d
 
-gr_m = Gr(d,c)
-# gr_m_plus_one = Gr(d,c+1)
-# cofiber = get_margolis_of_cofiber(gr_m,n)
-cofiber_margolis = map(len,get_margolis_of_cofiber(gr_m,n))
+# gr_m = Gr(d,c)
+# # gr_m_plus_one = Gr(d,c+1)
+# # cofiber = get_margolis_of_cofiber(gr_m,n)
+# cofiber_margolis = map(len,get_margolis_of_cofiber(gr_m,n))
 
 
 # K_gr_m = K(n,gr_m).third_page_ranks()
@@ -154,10 +154,10 @@ cofiber_margolis = map(len,get_margolis_of_cofiber(gr_m,n))
 
 # print wrap_lists_with_indices([map(len,get_cofiber(gr_m,gr_m_plus_one)),cofiber_margolis,[0 for i in range(8)]+K(n,Gr(d-1,c+1)).third_page_ranks()])
 
-print "cofiber"
-print sum(cofiber_margolis)
-print "K"
-print K(n,Gr(d-1,c+1)).rank()
+# print "cofiber"
+# print sum(cofiber_margolis)
+# print "K"
+# print K(n,Gr(d-1,c+1)).rank()
 
 def elements_in_g_H_n(g,n):
      gens = g.H[n] 
@@ -186,3 +186,11 @@ def is_zero_map(n,q,gr_m_plus_one,cofiber):
     print degree
     return []==flatten(map(lambda e: preimage_under_Qn(n,e,gr_m_plus_one),cofiber[degree]))
 
+def compute_diff(d,n,l):
+    m = 2^(n+1)+2*l
+    c = m - d
+
+    gr_m = Gr(d,c)
+    cofiber_margolis = map(len,get_margolis_of_cofiber(gr_m,n))
+    print "Cofiber" , sum(cofiber_margolis)
+    print "Gr_{d-1}" , K(n,Gr(d-1,c+1)).rank()
