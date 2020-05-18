@@ -1,3 +1,5 @@
+# from multiprocessing.dummy import Pool as ThreadPool
+from multiprocessing import Pool
 class Gr:
     """Grassmanian of d-planes in \R^(d+c)
 
@@ -41,7 +43,8 @@ class Gr:
 
         # print "Detereming Cohomology..."
         self.top_cohomological_dim = self.d*self.c
-        self.H = [self.additive_basis_for_qth_cohomology(q) for q in range(self.top_cohomological_dim+1)]
+        pool = Pool
+        self.H = pool.map(self.additive_basis_for_qth_cohomology, range(self.top_cohomological_dim+1))
 
         # print sum([len(y) for y in self.H])
 

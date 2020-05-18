@@ -1,4 +1,5 @@
 # load("gr.sage")
+from multiprocessing import Pool
 
 class K:
     def __init__(self, n,Gr):
@@ -105,7 +106,7 @@ class K:
         return Q
 
     def image_ranks(self):
-        return [self.image_rank_at(q) for q in range(1,self.Gr.top_cohomological_dim + 1)]
+        return Pool(4).map(self.image_rank_at,range(1,self.Gr.top_cohomological_dim + 1))
     
     def image_rank_at(self,q):
         # r = 2^(self.n + 1) - 1
@@ -156,6 +157,8 @@ class K:
         # q_plus_r_basis = self.Gr.additive_basis_for_qth_cohomology(q+r)
 
         image_under_d = [self.d(b) for b in q_basis]
+        # pool = Pool(4)
+        # image_under_d = pool.map(self.d, q_basis)
         
         columns = []
         for x in image_under_d: 
@@ -203,7 +206,9 @@ class K:
             
             
         # the +1 is for the added basepoint
-        return 1+sum([self.homology_at(q) for q in range(1,self.Gr.top_cohomological_dim + 1)])
+        # return 1+sum([self.homology_at(q) for q in range(1,self.Gr.top_cohomological_dim + 1)])
+        pool = Pool(4)
+        return 1+sum(pool.map(self.homology_at, range(1,self.Gr.top_cohomological_dim + 1)))
 
     # def gen_cycles(self):
     #     return [[x for x in H if self.d(x) == 0] for H in self.Gr.H]
