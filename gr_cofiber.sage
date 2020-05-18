@@ -20,9 +20,9 @@ def qth_matrix_of_inclusion(q,gr_m,gr_m_plus_one):
 
 # print gr_m.ideal.groebner_basis()
 
-def get_cofiber(gr,gr_m_plus_one):
-    d = gr.d
-    c = gr.c
+def get_cofiber(gr_m,gr_m_plus_one):
+    d = gr_m.d
+    c = gr_m.c
     cofiber = [[] for x in range(0,d*(c+1)+1)]
     for q in range(d*(c+1)+1):
         basis_of_kern = qth_matrix_of_inclusion(q,gr_m,gr_m_plus_one).right_kernel().basis()
